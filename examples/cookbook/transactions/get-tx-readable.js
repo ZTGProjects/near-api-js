@@ -28,9 +28,9 @@ function getConfig() {
 }
 
 // account id
-const accountId = "accountid." + network + "net";
+const accountId = "YourAccountId." + network + "net";
 // tx id
-const txHash = "txhash.............";
+const txHash = "tx hash here........";
 /**
  * Use TXParser
  */
@@ -52,6 +52,31 @@ const txHash = "txhash.............";
 	catch (error) {
 		console.error(error);
 	}
+
+	/**
+		Response will be an friendly JSON object like below
+		[{
+			"payload": "CreateAccount",
+			"meta": {
+				"signer_id": "testnet",
+				"receiver_id": "dedefefefefe.testnet"
+			},
+			"type": "CreateAccount",
+			"readable": "New Account created: dedefefefefe.testnet"
+		},
+		{ ... }
+		]
+	
+		
+		Note: that the response is array because TX Action can have more than one Actions on single transaction, hence parser can return more that one readable
+		string per Action in a Single TX
+		
+		From above JSON, you can simply use "readable" string. Or can possibly re-construction your own readable string of needed.
+		Meta can be easily extented in future to return more valuable information
+
+		
+	 
+	 */
 
 })();
 
