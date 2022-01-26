@@ -5,8 +5,9 @@ const homedir = require("os").homedir();
 const CREDENTIALS_DIR = ".near-credentials";
 
 /**
- * SET NETWORK FLAG !!
- * set to false for testnet , true for mainnet 
+ * 
+ * SET NETWORK FLAG.
+ * set to false for testnet, true for mainnet 
  */
 const IS_TEST = true;
 let network = "";
@@ -30,7 +31,6 @@ function getConfig() {
 const accountId = "accountid." + network + "net";
 // tx id
 const txHash = "txhash.............";
-
 /**
  * Use TXParser
  */
