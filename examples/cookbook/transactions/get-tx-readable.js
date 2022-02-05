@@ -1,6 +1,6 @@
 const { connect, keyStores } = require("near-api-js");
 const path = require("path");
-const TXParser = require("./tx-parser");
+const TXParser = require("../../../src/utils/transaction-parser");
 const homedir = require("os").homedir();
 const CREDENTIALS_DIR = ".near-credentials";
 
