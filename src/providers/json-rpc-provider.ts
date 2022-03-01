@@ -347,47 +347,15 @@ export class JsonRpcProvider extends Provider {
      */
     async sendJsonRpc<T>(method: string, params: object): Promise<T> {
         const response = await exponentialBackoff(REQUEST_RETRY_WAIT, REQUEST_RETRY_NUMBER, REQUEST_RETRY_WAIT_BACKOFF, async () => {
-            try {
-                const request = {
-                    method,
-                    params,
-                    id: (_nextId++),
-                    jsonrpc: '2.0'
-                };
-                const response = await fetchJson(this.connection, JSON.stringify(request));
-                if (response.error) {
-                    if (typeof response.error.data === 'object') {
-                        if (typeof response.error.data.error_message === 'string' && typeof response.error.data.error_type === 'string') {
-                            // if error data has error_message and error_type properties, we consider that node returned an error in the old format
-                            throw new TypedError(response.error.data.error_message, response.error.data.error_type);
-                        }
-
-                        throw parseRpcError(response.error.data);
-                    } else {
-                        const errorMessage = `[${response.error.code}] ${response.error.message}: ${response.error.data}`;
-                        // NOTE: All this hackery is happening because structured errors not implemented
-                        // TODO: Fix when https://github.com/nearprotocol/nearcore/issues/1839 gets resolved
-                        if (response.error.data === 'Timeout' || errorMessage.includes('Timeout error')
-                            || errorMessage.includes('query has timed out')) {
-                            throw new TypedError(errorMessage, 'TimeoutError');
-                        }
-
-                        throw new TypedError(errorMessage, getErrorTypeFromErrorMessage(response.error.data));
-                    }
-                }
-                // Success when response.error is not exist
-                return response;
-            } catch (error) {
-                if (error.type === 'TimeoutError') {
-                    if (!process.env['NEAR_NO_LOGS']){
-                        console.warn(`Retrying request to ${method} as it has timed out`, params);
-                    }
-                    return null;
-                }
-
-                throw error;
-            }
+            const request = {
+                method,
+                params,
+                id: (_nextId++),
+                jsonrpc: '2.0'
+            };
+            return this.parserResponse(request);
         });
+
         const { result } = response;
         // From jsonrpc spec:
         // result
@@ -398,5 +366,53 @@ export class JsonRpcProvider extends Provider {
                 `Exceeded ${REQUEST_RETRY_NUMBER} attempts for request to ${method}.`, 'RetriesExceeded');
         }
         return result;
+    }
+
+    /**
+     * 
+     * @param request 
+     * @returns 
+     */
+    async parserResponse(request){
+
+        try {
+            const response = await fetchJson(this.connection, JSON.stringify(request));
+            if(typeof IF_DEFINED_NEAR_RESPONSE_PARSER != "undefined"){
+                return response;
+            }
+            if (response.error) {
+                if (typeof response.error.data === 'object') {
+                    if (typeof response.error.data.error_message === 'string' && typeof response.error.data.error_type === 'string') {
+                        // if error data has error_message and error_type properties, we consider that node returned an error in the old format
+                        throw new TypedError(response.error.data.error_message, response.error.data.error_type);
+                    }
+
+                    throw parseRpcError(response.error.data);
+                } else {
+                    // payload is error object from near code, but tx_hash                        
+                    const errorMessage = `[${response.error.code}] ${response.error.message}: ${response.error.data}`;
+                    // NOTE: All this hackery is happening because structured errors not implemented
+                    // TODO: Fix when https://github.com/nearprotocol/nearcore/issues/1839 gets resolved
+                    if (response.error.data === 'Timeout' || errorMessage.includes('Timeout error')
+                        || errorMessage.includes('query has timed out')) {
+                        throw new TypedError(errorMessage, 'TimeoutError');
+                    }
+
+                    throw new TypedError(errorMessage, getErrorTypeFromErrorMessage(response.error.data));
+                }
+            }
+            // Success when response.error is not exist
+            return response;
+        } catch (error) {
+            if (error.type === 'TimeoutError') {
+                if (!process.env['NEAR_NO_LOGS']){
+                    console.warn(`Retrying request to ${method} as it has timed out`, params);
+                }
+                return null;
+            }
+
+            throw error;
+        }
+
     }
 }
