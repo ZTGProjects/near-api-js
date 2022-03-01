@@ -377,7 +377,7 @@ export class JsonRpcProvider extends Provider {
 
         try {
             const response = await fetchJson(this.connection, JSON.stringify(request));
-            if(typeof IF_DEFINED_NEAR_RESPONSE_PARSER != "undefined"){
+            if(!process.env['NEAR_USE_TX_PARSER']){
                 return response;
             }
             if (response.error) {
