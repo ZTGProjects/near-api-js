@@ -407,7 +407,10 @@
             }
             return result;
         }
-        return response.result;
+        if(typeof response.result == 'undefined')
+            return response.error;
+        else
+            return response.result;
      }
  }
  
